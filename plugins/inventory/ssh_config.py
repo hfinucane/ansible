@@ -64,7 +64,7 @@ def get_config():
             _copy = dict(d)
             del _copy['host']
             for host in d['host']:
-                ret_dict[host] = _copy['config']
+                ret_dict[host] = _copy.get('config', {})
         return ret_dict
 
 
