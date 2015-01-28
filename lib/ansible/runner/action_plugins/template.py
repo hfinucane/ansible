@@ -21,7 +21,6 @@ from ansible.utils import template
 from ansible import utils
 from ansible import errors
 from ansible.runner.return_data import ReturnData
-import traceback
 import base64
 
 class ActionModule(object):
@@ -88,7 +87,7 @@ class ActionModule(object):
         try:
             resultant = template.template_from_file(self.runner.basedir, source, inject, vault_password=self.runner.vault_pass)
         except Exception, e:
-            result = dict(failed=True, msg=type(e).__name__ + ":\n" + traceback.format_exc())
+            result = dict(failed=True, msg=type(e).__name__ + ": " + str(e))
             return ReturnData(conn=conn, comm_ok=False, result=result)
 
         local_md5 = utils.md5s(resultant)
