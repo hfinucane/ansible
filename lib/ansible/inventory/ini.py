@@ -34,7 +34,7 @@ class InventoryParser(object):
     """
 
     def __init__(self, filename=C.DEFAULT_HOST_LIST):
-
+        self.lineno = 0
         with open(filename) as fh:
             self.lines = fh.readlines()
             self.groups = {}
@@ -88,6 +88,7 @@ class InventoryParser(object):
         active_group_name = 'ungrouped'
 
         for line in self.lines:
+            self.lineno += 1
             line = utils.before_comment(line).strip()
             if line.startswith("[") and line.endswith("]"):
                 active_group_name = line.replace("[","").replace("]","")
@@ -142,7 +143,7 @@ class InventoryParser(object):
                             try:
                                 (k,v) = t.split("=", 1)
                             except ValueError, e:
-                                raise errors.AnsibleError("Invalid ini entry: %s - %s" % (t, str(e)))
+                                raise errors.AnsibleError("Invalid ini entry on line %s: %s - %s" % (self.lineno, t, str(e)))
                             host.set_variable(k, self._parse_value(v))
                     self.groups[active_group_name].add_host(host)
 
@@ -154,6 +155,7 @@ class InventoryParser(object):
         group = None
 
         for line in self.lines:
+            self.lineno += 1
             line = line.strip()
             if line is None or line == '':
                 continue
@@ -169,7 +171,7 @@ class InventoryParser(object):
             elif group:
                 kid_group = self.groups.get(line, None)
                 if kid_group is None:
-                    raise errors.AnsibleError("child group is not defined: (%s)" % line)
+                    raise errors.AnsibleError("child group is not defined on line %s: (%s)" % (self.lineno, line))
                 else:
                     group.add_child_group(kid_group)
 
@@ -181,12 +183,13 @@ class InventoryParser(object):
     def _parse_group_variables(self):
         group = None
         for line in self.lines:
+            self.lineno += 1
             line = line.strip()
             if line.startswith("[") and ":vars]" in line:
                 line = line.replace("[","").replace(":vars]","")
                 group = self.groups.get(line, None)
                 if group is None:
-                    raise errors.AnsibleError("can't add vars to undefined group: %s" % line)
+                    raise errors.AnsibleError("can't add vars to undefined group on line %s: %s" % (self.lineno, line))
             elif line.startswith("#") or line.startswith(";"):
                 pass
             elif line.startswith("["):
@@ -195,7 +198,7 @@ class InventoryParser(object):
                 pass
             elif group:
                 if "=" not in line:
-                    raise errors.AnsibleError("variables assigned to group must be in key=value form")
+                    raise errors.AnsibleError("variables assigned to group must be in key=value form (line %s)" % self.lineno)
                 else:
                     (k, v) = [e.strip() for e in line.split("=", 1)]
                     group.set_variable(k, self._parse_value(v))
